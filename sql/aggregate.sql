@@ -1,32 +1,14 @@
--- Aggregate Functions with Window Frames
--- Running totals and moving averages for sales
-
--- 1. Running total of sales by date
-SELECT sale_date, SUM(amount) AS daily_sales,
-       SUM(SUM(amount)) OVER (ORDER BY sale_date
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_total
+-- Query 5: Compare ROWS vs RANGE window frames
+-- Demonstrates difference between ROWS and RANGE
+SELECT 
+    TO_CHAR(sale_date, 'YYYY-MM') as month,
+    SUM(amount) as monthly_sales,
+    -- ROWS: counts exactly 3 rows (current + 2 preceding)
+    SUM(SUM(amount)) OVER (ORDER BY TO_CHAR(sale_date, 'YYYY-MM') 
+                           ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) as sum_rows_3m,
+    -- RANGE: includes all rows with same ORDER BY value
+    SUM(SUM(amount)) OVER (ORDER BY TO_CHAR(sale_date, 'YYYY-MM') 
+                           RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as sum_range_running
 FROM transactions
-GROUP BY sale_date;
-
--- 2. Running average of sales
-SELECT sale_date, SUM(amount) AS daily_sales,
-       AVG(SUM(amount)) OVER (ORDER BY sale_date
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_avg
-FROM transactions
-GROUP BY sale_date;
-
--- 3. 3-day moving average of sales
-SELECT sale_date, SUM(amount) AS daily_sales,
-       AVG(SUM(amount)) OVER (ORDER BY sale_date
-           ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS moving_avg_3
-FROM transactions
-GROUP BY sale_date;
-
--- 4. Min and Max sales observed up to current row
-SELECT sale_date, SUM(amount) AS daily_sales,
-       MIN(SUM(amount)) OVER (ORDER BY sale_date
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS min_so_far,
-       MAX(SUM(amount)) OVER (ORDER BY sale_date
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS max_so_far
-FROM transactions
-GROUP BY sale_date;
+GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
+ORDER BY month;
