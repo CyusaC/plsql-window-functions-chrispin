@@ -1,73 +1,114 @@
+-- =====================================================
+-- RwandaShop E-Commerce Database Schema
+-- Course: INSY 8311 - Database Development with PL/SQL
+-- Author: [Your Name]
+-- Date: September 29, 2025
+-- Safe CREATE script (drops wrapped to avoid errors if objects don't exist)
+-- =====================================================
 
-    INTO transactions VALUES (transaction_seq.NEXTVAL, 1025, 2019, DATE '2024-02-15', 1, 550000, 550000, 'Bank Transfer', 'Completed')
-    INTO transactions VALUES (transaction_seq.NEXTVAL, 1026, 2026, DATE '2024-02-16', 5, 12000, 60000, 'Cash', 'Completed')
-    INTO transactions VALUES (transaction_seq.NEXTVAL, 1027, 2011, DATE '2024-02-18', 2, 95000, 190000, 'Mobile Money', 'Completed')
-    INTO transactions VALUES (transaction_seq.NEXTVAL, 1028, 2008, DATE '2024-02-20', 1, 120000, 120000, 'Card', 'Completed')
-    INTO transactions VALUES (transaction_seq.NEXTVAL, 1029, 2012, DATE '2024-02-22', 3, 25000, 75000, 'Cash', 'Completed')
-    INTO transactions VALUES (transaction_seq.NEXTVAL, 1030, 2025, DATE '2024-02-24', 8, 18000, 144000, 'Mobile Money', 'Completed')
-SELECT * FROM dual;
+-- --------------------------
+-- Safe drops for tables
+-- --------------------------
+BEGIN
+  EXECUTE IMMEDIATE 'DROP TABLE transactions CASCADE CONSTRAINTS';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+BEGIN
+  EXECUTE IMMEDIATE 'DROP TABLE products CASCADE CONSTRAINTS';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+BEGIN
+  EXECUTE IMMEDIATE 'DROP TABLE customers CASCADE CONSTRAINTS';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- --------------------------
+-- Safe drops for sequences
+-- --------------------------
+BEGIN
+  EXECUTE IMMEDIATE 'DROP SEQUENCE transaction_seq';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+BEGIN
+  EXECUTE IMMEDIATE 'DROP SEQUENCE product_seq';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+BEGIN
+  EXECUTE IMMEDIATE 'DROP SEQUENCE customer_seq';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- =====================================================
+-- CREATE SEQUENCES
+-- =====================================================
+CREATE SEQUENCE customer_seq START WITH 1001 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE product_seq START WITH 2001 INCREMENT BY 1 NOCACHE NOCYCLE;
+CREATE SEQUENCE transaction_seq START WITH 3001 INCREMENT BY 1 NOCACHE NOCYCLE;
+
+-- =====================================================
+-- TABLE: CUSTOMERS
+-- =====================================================
+CREATE TABLE customers (
+    customer_id NUMBER PRIMARY KEY,
+    first_name VARCHAR2(50) NOT NULL,
+    last_name VARCHAR2(50) NOT NULL,
+    email VARCHAR2(100) UNIQUE NOT NULL,
+    phone VARCHAR2(20),
+    region VARCHAR2(50) NOT NULL,
+    registration_date DATE DEFAULT SYSDATE,
+    customer_status VARCHAR2(20) DEFAULT 'Active',
+    CONSTRAINT chk_region CHECK (region IN ('Kigali', 'Huye', 'Musanze', 'Rubavu', 'Muhanga')),
+    CONSTRAINT chk_status CHECK (customer_status IN ('Active', 'Inactive', 'Suspended'))
+);
+
+-- =====================================================
+-- TABLE: PRODUCTS
+-- =====================================================
+CREATE TABLE products (
+    product_id NUMBER PRIMARY KEY,
+    product_name VARCHAR2(100) NOT NULL,
+    category VARCHAR2(50) NOT NULL,
+    unit_price NUMBER(12,2) NOT NULL,
+    stock_quantity NUMBER DEFAULT 0,
+    supplier VARCHAR2(100),
+    date_added DATE DEFAULT SYSDATE,
+    CONSTRAINT chk_category CHECK (category IN ('Electronics', 'Clothing', 'Home & Garden', 'Food & Beverages')),
+    CONSTRAINT chk_price CHECK (unit_price > 0),
+    CONSTRAINT chk_stock CHECK (stock_quantity >= 0)
+);
+
+-- =====================================================
+-- TABLE: TRANSACTIONS
+-- =====================================================
+CREATE TABLE transactions (
+    transaction_id NUMBER PRIMARY KEY,
+    customer_id NUMBER NOT NULL,
+    product_id NUMBER NOT NULL,
+    transaction_date DATE NOT NULL,
+    quantity NUMBER NOT NULL,
+    unit_price NUMBER(12,2) NOT NULL,
+    total_amount NUMBER(14,2) NOT NULL,
+    payment_method VARCHAR2(30),
+    transaction_status VARCHAR2(20) DEFAULT 'Completed',
+    CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(product_id),
+    CONSTRAINT chk_quantity CHECK (quantity > 0),
+    CONSTRAINT chk_amount CHECK (total_amount > 0),
+    CONSTRAINT chk_payment CHECK (payment_method IN ('Cash', 'Mobile Money', 'Card', 'Bank Transfer')),
+    CONSTRAINT chk_trans_status CHECK (transaction_status IN ('Completed', 'Pending', 'Cancelled', 'Refunded'))
+);
+
+-- =====================================================
+-- Helpful notes:
+-- 1) Run this script first to create empty schema objects.
+-- 2) Then run seed_data.sql (which contains INSERT ... and the PL/SQL populator).
+-- 3) If you re-run frequently during development, keep the safe DROP blocks.
+-- =====================================================
 
 COMMIT;
-
--- =====================================================
--- QUICK POPULATOR: create additional random transactions
--- This PL/SQL block inserts 150 more transactions to reach 200+ total.
--- It picks a random customer_id between 1001 and 1050, a random product_id
--- between 2001 and 2030, uses the product's unit_price, random qty 1-5,
--- random date between 2024-01-01 and 2024-09-30, and cycles payment methods.
--- =====================================================
-
-BEGIN
-  DBMS_OUTPUT.ENABLE(NULL);
-END;
-/
-SET SERVEROUTPUT ON SIZE 1000000;
-
-DECLARE
-  v_cust   NUMBER;
-  v_prod   NUMBER;
-  v_price  NUMBER(12,2);
-  v_qty    NUMBER;
-  v_date   DATE;
-  v_pay    VARCHAR2(30);
-  v_cnt    NUMBER := 0;
-BEGIN
-  FOR i IN 1..150 LOOP
-    -- random customer 1001..1050
-    v_cust := 1000 + TRUNC(DBMS_RANDOM.VALUE(1,51));
-    -- random product 2001..2030
-    v_prod := 2000 + TRUNC(DBMS_RANDOM.VALUE(1,31));
-
-    -- get the product price (assumes product exists)
-    BEGIN
-      SELECT unit_price INTO v_price FROM products WHERE product_id = v_prod;
-    EXCEPTION
-      WHEN NO_DATA_FOUND THEN
-        v_price := 1000; -- fallback price if product id missing
-    END;
-
-    v_qty := TRUNC(DBMS_RANDOM.VALUE(1,6)); -- 1..5
-    v_date := DATE '2024-01-01' + TRUNC(DBMS_RANDOM.VALUE(0, 273)); -- up to ~Sep 30
-
-    CASE MOD(i,4)
-      WHEN 0 THEN v_pay := 'Cash';
-      WHEN 1 THEN v_pay := 'Mobile Money';
-      WHEN 2 THEN v_pay := 'Card';
-      WHEN 3 THEN v_pay := 'Bank Transfer';
-    END CASE;
-
-    INSERT INTO transactions (
-      transaction_id, customer_id, product_id, transaction_date,
-      quantity, unit_price, total_amount, payment_method, transaction_status
-    ) VALUES (
-      transaction_seq.NEXTVAL, v_cust, v_prod, v_date,
-      v_qty, v_price, ROUND(v_qty * v_price, 2), v_pay, 'Completed'
-    );
-
-    v_cnt := v_cnt + 1;
-  END LOOP;
-
-  COMMIT;
-  DBMS_OUTPUT.PUT_LINE('Inserted ' || v_cnt || ' random transactions.');
-END;
-/
