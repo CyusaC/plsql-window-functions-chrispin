@@ -10,8 +10,7 @@ Beverage sales peak in the morning, while pastries perform best in the afternoon
 Inefficient stock tracking causes shortages of high-demand drinks and waste from unsold items.
 
 Sources Consulted
-
-3 references
+ references
 
 PL/SQL Window Functions: Coffee Shop Business Analysis
 Problem Statement
