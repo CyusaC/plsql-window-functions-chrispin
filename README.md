@@ -1,52 +1,47 @@
-# plsql-window-functions-chrispin
+Coffee Shop Business Analysis
+Business Problem
 
-# PL/SQL Window Functions – Chrispin
+The coffee shop lacks data-driven insights into sales, customer behavior, and inventory, making it difficult to optimize operations and growth.
 
-## 📌 Problem Definition
-**Business Context:**  
-[Describe the company, department, and industry. Example: A retail company tracking product sales across regions.]
+Key Findings
 
-**Data Challenge:**  
-[2–3 sentences describing the business problem. Example: The company struggles to identify top-performing products and customer buying patterns across different time periods.]
+Beverage sales peak in the morning, while pastries perform best in the afternoon.
 
-**Expected Outcome:**  
-[What insights the analysis will deliver. Example: Support marketing campaigns, optimize inventory, and improve customer segmentation.]
+Inefficient stock tracking causes shortages of high-demand drinks and waste from unsold items.
 
----
+Sources Consulted
 
-## 🎯 Success Criteria
-The analysis must achieve these 5 goals:
+3 references
 
-1. **Top 5 products per region/quarter** → `RANK()`
-2. **Running monthly sales totals** → `SUM() OVER()`
-3. **Month-over-month growth** → `LAG()` / `LEAD()`
-4. **Customer quartiles** → `NTILE(4)`
-5. **3-month moving averages** → `AVG() OVER()`
+PL/SQL Window Functions: Coffee Shop Business Analysis
+Problem Statement
 
----
+The coffee shop operates in a competitive market but struggles with identifying sales trends, customer preferences, and inventory efficiency.
 
-## 🗂 Database Schema
-We designed **3 related tables**:
+Business Context
 
-- **Customers**: `customer_id (PK), name, region`
-- **Products**: `product_id (PK), name, category`
-- **Transactions**: `transaction_id (PK), customer_id (FK), product_id (FK), sale_date, amount`
+The shop specializes in coffee, beverages, and pastries, serving diverse customer groups throughout the day. Despite steady foot traffic, decision-making is hindered by limited analytical reporting.
 
-📊 **ER Diagram**  
-![ER Diagram](docs/er_diagram.png)
+Business Challenge
 
-SQL files:
-- [`sql/schema.sql`](sql/schema.sql) → table definitions  
-- [`sql/seed_data.sql`](sql/seed_data.sql) → sample dataset  
+No clear visibility into top-performing products per time slot (morning, afternoon, evening)
 
----
+Lack of customer segmentation for targeted marketing
 
-## 🔍 Window Functions Implementation
+Difficulty tracking revenue and growth trends
 
-### 1. Ranking Functions
-**Example Query:**  
-```sql
-SELECT customer_id, SUM(amount) AS total_sales,
-       RANK() OVER (ORDER BY SUM(amount) DESC) AS sales_rank
-FROM transactions
-GROUP BY customer_id;
+Frequent stockouts and overstock situations
+
+Absence of structured performance analysis tools
+
+Analytical Objectives
+
+Rank top 5 products per time slot using window functions
+
+Monitor revenue trends with running totals and moving averages
+
+Calculate month-over-month growth percentages
+
+Segment customers into loyalty tiers for personalized offers
+
+Provide actionable insights for inventory and menu optimization
