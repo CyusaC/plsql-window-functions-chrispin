@@ -1,26 +1,45 @@
--- Ranking Functions Examples
--- Find top customers by total sales using ROW_NUMBER, RANK, and DENSE_RANK
+-- ============================================
+-- RANKING FUNCTIONS
+-- Purpose: Identify top customers and products
+-- ============================================
 
--- 1. ROW_NUMBER: assigns unique numbers to each customer ordered by sales
-SELECT customer_id, SUM(amount) AS total_sales,
-       ROW_NUMBER() OVER (ORDER BY SUM(amount) DESC) AS row_num
-FROM transactions
-GROUP BY customer_id;
+-- Query 1: Top 10 Customers by Total Revenue
+-- Uses: ROW_NUMBER, RANK, DENSE_RANK
+SELECT 
+    customer_id,
+    customer_name,
+    region,
+    total_revenue,
+    ROW_NUMBER() OVER (ORDER BY total_revenue DESC) as row_num,
+    RANK() OVER (ORDER BY total_revenue DESC) as revenue_rank,
+    DENSE_RANK() OVER (ORDER BY total_revenue DESC) as dense_rank,
+    ROUND(PERCENT_RANK() OVER (ORDER BY total_revenue DESC) * 100, 2) as percentile
+FROM (
+    SELECT 
+        c.customer_id,
+        c.customer_name,
+        c.region,
+        SUM(t.amount) as total_revenue
+    FROM customers c
+    JOIN transactions t ON c.customer_id = t.customer_id
+    GROUP BY c.customer_id, c.customer_name, c.region
+)
+ORDER BY total_revenue DESC;
 
--- 2. RANK: allows ties (same sales amount get same rank, gaps appear)
-SELECT customer_id, SUM(amount) AS total_sales,
-       RANK() OVER (ORDER BY SUM(amount) DESC) AS sales_rank
-FROM transactions
-GROUP BY customer_id;
-
--- 3. DENSE_RANK: similar to RANK, but no gaps in ranking
-SELECT customer_id, SUM(amount) AS total_sales,
-       DENSE_RANK() OVER (ORDER BY SUM(amount) DESC) AS dense_sales_rank
-FROM transactions
-GROUP BY customer_id;
-
--- 4. PERCENT_RANK: relative rank percentage of each customer
-SELECT customer_id, SUM(amount) AS total_sales,
-       PERCENT_RANK() OVER (ORDER BY SUM(amount) DESC) AS pct_rank
-FROM transactions
-GROUP BY customer_id;
+-- Query 2: Top 5 Products Per Region
+-- Uses: RANK with PARTITION BY
+SELECT *
+FROM (
+    SELECT 
+        c.region,
+        p.product_name,
+        p.category,
+        SUM(t.amount) as total_sales,
+        RANK() OVER (PARTITION BY c.region ORDER BY SUM(t.amount) DESC) as region_rank
+    FROM transactions t
+    JOIN products p ON t.product_id = p.product_id
+    JOIN customers c ON t.customer_id = c.customer_id
+    GROUP BY c.region, p.product_name, p.category
+)
+WHERE region_rank <= 5
+ORDER BY region, region_rank;
